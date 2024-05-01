@@ -180,7 +180,7 @@ for emoji in selected.values():
         packs[emoji.category]["files"][emoji.shortcode] = emoji_filename
     else:
         packs[emoji.category] = {}
-        packs[emoji.category]["files"] = {emoji.shortcode: emoji.pack["pack"]}
+        packs[emoji.category]["files"] = {emoji.shortcode: emoji_filename}
         if emoji.pack and "pack" in emoji.pack and emoji.pack["pack"]:
             packs[emoji.category]["pack"] = emoji.pack["pack"]
         else:
