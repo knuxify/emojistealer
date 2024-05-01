@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("url", help="URL of the instance to download emoji from")
 parser.add_argument(
     "--original",
+    action='store_true',
     help='download emoji from "original URL" instead of "static URL" (only for Mastodon, does not make a difference on Pleroma/Misskey',
 )
 parser.add_argument("-o", "--output", help="output directory to save the emoji to", default="./emoji-downloads")
