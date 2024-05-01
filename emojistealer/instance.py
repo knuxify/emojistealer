@@ -7,10 +7,11 @@ from . import logger
 from .emoji import Emoji
 from .request import request_get, RequestError
 
+import requests.exceptions
 from functools import cached_property
 from urllib.parse import urljoin, urlparse
 from typing import List, Self, Union
-
+import os.path
 
 def get_base_url(url: str) -> str:
     """
@@ -175,6 +176,9 @@ class InstancePleroma(Instance):
             # fall back to Mastodon-style emoji API.
             return InstanceMastodon.all_emoji(self, drop_pack_prefix=True)
 
+        emoji_dirnames = []
+        packs = {}
+
         for shortcode, emoji in req.items():
             if not emoji.get("image_url", ""):
                 logger.warn(f"Missing URL for emoji {shortcode}")
@@ -191,12 +195,33 @@ class InstancePleroma(Instance):
             if not url.startswith("http://") or url.startswith("https://"):
                 url = urljoin(self.url, url)
 
+            # Try to find pack.json for additional pack metadata
+            dirname = os.path.dirname(url)
+            pack_name = os.path.basename(dirname)
+            if pack_name not in emoji_dirnames:
+                emoji_dirnames.append(pack_name)
+                pack = None
+                try:
+                    print(url, dirname, urljoin(dirname + "/", "pack.json"))
+                    pack_req = request_get(
+                        urljoin(dirname + "/", "pack.json"), parse_json=True
+                    )
+                except (RequestError, requests.exceptions.JSONDecodeError):
+                    if pack_name != "emoji":
+                        logger.info(f"Did not find pack.json for {pack_name}")
+                    pass
+                else:
+                    logger.info(f"Found pack.json for {pack_name}")
+                    pack = pack_req.copy()
+                packs[pack_name] = pack
+
             emoji_list.append(
                 Emoji(
                     shortcode=shortcode,
                     category=category,
                     original_url=url,
                     static_url=url,
+                    pack=packs[pack_name],
                 )
             )
 

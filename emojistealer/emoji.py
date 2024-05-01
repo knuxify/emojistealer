@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 
+from typing import Optional
 
 @dataclass
 class Emoji:
@@ -21,3 +22,6 @@ class Emoji:
 
     #: Category/pack that this emoji belongs to.
     category: str
+
+    #: pack.json data.
+    pack: Optional[dict]

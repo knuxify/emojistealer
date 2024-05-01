@@ -7,6 +7,7 @@ from .instance import Instance
 
 import argparse
 import os.path
+import json
 
 parser = argparse.ArgumentParser(
     prog="emojistealer",
@@ -156,22 +157,43 @@ for handler in logger.handlers:
     if handler.name == "my_handler":
         h = handler
 
+packs = {}
+
 for emoji in selected.values():
     h.terminator = ""
     logger.info(f"{emoji.shortcode}...")
     h.terminator = "\n"
-    target_path = os.path.join(
-                output_dir,
-                emoji.category if emoji.category else "",
-                emoji.shortcode + os.path.splitext(url)[1],
-            )
-    if os.path.exists(target_path):
-        print(" already downloaded")
-        continue
+
     if args.original:
         url = emoji.original_url or emoji.static_url
     else:
         url = emoji.static_url or emoji.original_url
+
+    emoji_filename = emoji.shortcode + os.path.splitext(url)[1]
+    target_path = os.path.join(
+                output_dir,
+                emoji.category if emoji.category else "",
+                emoji_filename,
+            )
+
+    if emoji.category in packs:
+        packs[emoji.category]["files"][emoji.shortcode] = emoji_filename
+    else:
+        packs[emoji.category] = {}
+        packs[emoji.category]["files"] = {emoji.shortcode: emoji.pack["pack"]}
+        if emoji.pack and "pack" in emoji.pack and emoji.pack["pack"]:
+            packs[emoji.category]["pack"] = emoji.pack["pack"]
+        else:
+            packs[emoji.category]["pack"] = {
+                "description": pack_name,
+                "homepage": instance.url,
+                "share-files": True,
+            }
+
+    if os.path.exists(target_path):
+        print(" already downloaded")
+        continue
+
     try:
         request_download(
             url, target_path
@@ -179,8 +201,14 @@ for emoji in selected.values():
     except RequestError as e:
         print(" ✗")
         logger.warn(f"Server returned error: {int(str(e))}")
+        continue
     else:
         print(" ✓")
+
+logger.info("Writing pack.json files...")
+for pack_name, pack_data in packs.items():
+    with open(os.path.join(output_dir, pack_name, "pack.json"), "w") as f:
+        json.dump(pack_data, f)
 
 logger.info("Done! Enjoy your emoji!")
 
